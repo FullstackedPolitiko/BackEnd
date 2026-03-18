@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dgSpecHash": "nmzg7J6m3aY=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\malde\\Desktop\\Fullstack\\BackEnd\\src\\Backend.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\malde\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\5.0.0\\microsoft.bcl.asyncinterfaces.5.0.0.nupkg.sha512",
+    "C:\\Users\\malde\\.nuget\\packages\\microsoft.data.edm\\5.8.5\\microsoft.data.edm.5.8.5.nupkg.sha512",
+    "C:\\Users\\malde\\.nuget\\packages\\microsoft.data.odata\\5.8.5\\microsoft.data.odata.5.8.5.nupkg.sha512",
+    "C:\\Users\\malde\\.nuget\\packages\\microsoft.odata.core\\7.9.4\\microsoft.odata.core.7.9.4.nupkg.sha512",
+    "C:\\Users\\malde\\.nuget\\packages\\microsoft.odata.edm\\7.9.4\\microsoft.odata.edm.7.9.4.nupkg.sha512",
+    "C:\\Users\\malde\\.nuget\\packages\\microsoft.spatial\\7.9.4\\microsoft.spatial.7.9.4.nupkg.sha512",
+    "C:\\Users\\malde\\.nuget\\packages\\simple.odata.client\\6.0.1\\simple.odata.client.6.0.1.nupkg.sha512",
+    "C:\\Users\\malde\\.nuget\\packages\\system.spatial\\5.8.5\\system.spatial.5.8.5.nupkg.sha512"
+  ],
+  "logs": []
+}
