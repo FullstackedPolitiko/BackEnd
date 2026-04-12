@@ -45,5 +45,20 @@ public class OdaService : IOdaService
 
         return result?.Sagstrin?.ToList() ?? new List<Sagstrin>();
     }
+    public async Task<List<Sag>> GetSagerForPartyAsync(string partyShortName, OdaPeriod period)
+    {
+        var result = await _client
+            .For<Sag>()
+            .Filter(x => x.Periodeid == (int)period)
+            .Expand(x => x.SagAktør.Select(sa => sa.Aktør))
+            .FindEntriesAsync();
 
+        return result
+            .Where(sag => sag.SagAktør != null &&
+                          sag.SagAktør.Any(sa =>
+                              sa.Aktør != null &&
+                              sa.Aktør.Gruppenavnkort == partyShortName))
+            .OrderBy(sag => sag.Titel)
+            .ToList();
+    }
 }
