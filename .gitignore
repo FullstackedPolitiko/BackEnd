@@ -2,11 +2,3 @@
 bin/
 obj/
 
-.vscode/
-
-
-[Bb]in/
-[Oo]bj/
-
-.DS_Store
-Thumbs.db
