@@ -1,7 +1,7 @@
 ﻿using ODA.model.oda;
 using ODA.Service.Interface;
 using Simple.OData.Client;
-using ODA.Service;
+
 namespace ODA.Service;
 
 public class OdaService : IOdaService
@@ -62,6 +62,7 @@ public class OdaService : IOdaService
             .ToList();
     }
 
+        
      public async Task<Sag> GetPoliticalSag(int id)
     {
         var sag = await _client
