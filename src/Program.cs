@@ -5,7 +5,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<OdaService>();
 
-
 var app = builder.Build();
 
 app.MapPoliticianDataApi();

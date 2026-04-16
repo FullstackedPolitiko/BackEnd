@@ -10,28 +10,29 @@ public class OdaService : IOdaService
     private readonly ODataClient _client = new ODataClient("https://oda.ft.dk/api/");
 
     public async Task<List<Politician>> GetPoliticalPartyMembers(string partyShortName, OdaPeriod period)
-{
-    var partier = await _client.For<Aktør>()
-        .Filter(x => x.Periodeid == (int)period)
-        .Filter(x => x.Gruppenavnkort == partyShortName)
-        .Expand(x => x.FraAktørAktør.Select(y => y.FraAktør))
-        .FindEntriesAsync();
+    {
+        var partier = await _client.For<Aktør>()
+            .Filter(x => x.Periodeid == (int)period)
+            .Filter(x => x.Gruppenavnkort == partyShortName)
+            .Expand(x => x.FraAktørAktør.Select(y => y.FraAktør))
+            .FindEntriesAsync();
 
-    return partier
-        .SelectMany(p => p.FraAktørAktør ?? new List<AktørAktør>())
-        .Select(rel => rel.FraAktør)
-        .Where(person => person != null)
-        .DistinctBy(person => person.Id)
-        .Select(person => new Politician
-        {
-            Id = person.Id,
-            Fornavn = person.Fornavn,
-            Efternavn = person.Efternavn,
-            Navn = person.Navn,
-        })
-        .OrderBy(p => p.Navn)
-        .ToList();
-}
+        return partier
+            .SelectMany(p => p.FraAktørAktør ?? new List<AktørAktør>())
+            .Select(rel => rel.FraAktør)
+            .Where(person => person != null)
+            .DistinctBy(person => person.Id)
+            .Select(person => new Politician
+            {
+                Id = person.Id,
+                Fornavn = person.Fornavn,
+                Efternavn = person.Efternavn,
+                Navn = person.Navn,
+                Gruppenavnkort = partyShortName,
+            })
+            .OrderBy(p => p.Navn)
+            .ToList();
+    }
 
     public async Task<Sag?> GetSagAsync(int sagid)
     {
@@ -69,7 +70,6 @@ public class OdaService : IOdaService
             .OrderBy(sag => sag.Titel)
             .ToList();
     }
-
         
      public async Task<Sag> GetPoliticalSag(int id)
     {

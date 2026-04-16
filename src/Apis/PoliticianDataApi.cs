@@ -9,15 +9,15 @@ namespace src.Apis
         {
             var api = app.MapGroup("api/PoliticianData");
             
-            api.MapGet("/sager",GetSager)
-            .WithName("Sager")
-            .WithDescription("Get a paginated list of sager")
-            .WithTags("Sager");
+            api.MapGet("/politicians/{partyShortName}/{period}",GetPoliticians)
+            .WithName("politicians")
+            .WithDescription("Get a paginated list of politicians from a party")
+            .WithTags("Politicians");
 
             return app;
         }
 
-        public static async Task<List<Politician>> GetSager(
+        public static async Task<List<Politician>> GetPoliticians(
             string partyShortName, 
             OdaPeriod period,
             OdaService odaService)
