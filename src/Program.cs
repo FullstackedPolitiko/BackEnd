@@ -1,11 +1,22 @@
 ﻿using ODA.Service;
 using src.Apis;
+using src.WebConfig;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<OdaService>();
+builder.Services.SetupCors();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("Development");
+}
+else
+{
+    app.UseCors("Allowed");
+}
 
 app.MapPoliticianDataApi();
 
