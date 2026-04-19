@@ -6,12 +6,16 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<OdaService>();
 builder.Services.SetupCors();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 WebApplication app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseCors("Development");
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 else
 {
@@ -19,5 +23,4 @@ else
 }
 
 app.MapPoliticianDataApi();
-
 app.Run();
