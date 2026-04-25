@@ -71,14 +71,33 @@ public class OdaService : IOdaService
             .ToList();
     }
         
-     public async Task<Sag> GetPoliticalSag(int id)
+    public async Task<SagDTO?> GetPoliticalSag(int id)
     {
         var sag = await _client
             .For<Sag>("Sag") 
             .Key(id)
+            .Expand("Sagstrin", "Sagaktør/Aktør")
             .FindEntryAsync();
-            
-        return sag;
+
+        if (sag == null) return null;
+
+        var dto = new SagDTO
+        {
+            Sagsnummer = sag.Id,
+            Overskrift = sag.Titel,
+            KortResume = sag.Resume,
+            Type = sag.Titelkort,
+            SidstOpdateret = sag.Opdateringsdato,
+
+            Politikere = sag.SagAktør?
+            .Where(x => x.Aktør != null)
+            .Select(x => x.Aktør!.Navn)
+            .ToList() ?? new List<string>(),
+
+
+        };
+        
+    return dto;
     }   
     public async Task <List<Sag>> GetSaserByPartyAndPeriode(string partyShortName, OdaPeriod period)
     {
