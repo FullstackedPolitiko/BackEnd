@@ -28,6 +28,7 @@ else
 {
     app.UseCors("Allowed");
 }
-
+app.MapUserApi();
 app.MapPoliticianDataApi();
+
 app.Run();
