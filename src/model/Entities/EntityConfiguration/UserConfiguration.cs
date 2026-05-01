@@ -9,7 +9,7 @@ namespace src.model.Entities.EntityConfiguration
         {
             builder.HasKey(b => b.Id);
             builder.Property(b=>b.Name).IsRequired().HasMaxLength(200);
-            builder.Property(b=>b.Token).IsRequired();
+            builder.HasIndex(b=>b.Token).IsUnique();
         }
 
     }

@@ -12,12 +12,12 @@ namespace src.Apis
         {
             var api = app.MapGroup("api/users");
 
-            api.MapGet("/users/{id}", GetUserById)
+            api.MapGet("/{id}", GetUserById)
             .WithName("user fetch")
             .WithDescription("Gets a user")
             .WithTags("fetch");
 
-            api.MapPost("/users/create/{user}", CreateUser)
+            api.MapPost("/create/{user}", CreateUser)
             .WithName("user create")
             .WithDescription("Creates a user")
             .WithTags("create");
