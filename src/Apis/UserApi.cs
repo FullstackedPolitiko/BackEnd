@@ -17,7 +17,7 @@ namespace src.Apis
             .WithDescription("Gets a user")
             .WithTags("fetch");
 
-            api.MapPost("/create/{user}", CreateUser)
+            api.MapPost("/create", CreateUser)
             .WithName("user create")
             .WithDescription("Creates a user")
             .WithTags("create");
