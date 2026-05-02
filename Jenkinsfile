@@ -2,6 +2,7 @@ pipeline {
     agent any
     
     stages {
+        
         stage('Deploy backend') {
             steps {
                 dir('/home/malde/projects/BackEnd') {
@@ -15,11 +16,11 @@ pipeline {
             }
         }
 
-        stage('Database Update') {
+      stage('Database Update') {
             steps {
                 sh 'docker cp /home/malde/projects/BackEnd/src/database_update.sql db:/tmp/db.sql'
                 
-                sh 'docker exec db psql -U admin -d postgres -f /tmp/db.sql'
+                sh 'docker exec db psql -U admin -d db -f /tmp/db.sql'
                 
                 sh 'docker exec db rm /tmp/db.sql'
             }

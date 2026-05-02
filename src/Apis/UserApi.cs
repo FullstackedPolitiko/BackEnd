@@ -28,7 +28,7 @@ namespace src.Apis
         public static async Task<Ok<User>> GetUserById(int id, ApplicationDbContext db)
         {
             User user = null;
-            user = await db.Users.SingleAsync(b => b.Id == id);
+            user = await db.Users.FirstOrDefaultAsync(b => b.Id == id);
 
             return TypedResults.Ok(user);
         }
