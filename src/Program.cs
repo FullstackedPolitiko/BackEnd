@@ -4,7 +4,6 @@ using src.Apis;
 using src.Database;
 using src.WebConfig;
 
-DotNetEnv.Env.Load();
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 string ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
