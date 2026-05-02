@@ -23,4 +23,5 @@ else
 }
 
 app.MapPoliticianDataApi();
+app.MapSagDataApi();
 app.Run();

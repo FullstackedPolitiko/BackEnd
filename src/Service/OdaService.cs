@@ -98,7 +98,63 @@ public class OdaService : IOdaService
         };
         
     return dto;
-    }   
+    }  
+
+    public async Task<List<SagDTO>> GetFilteredSager(SagFilterDTO filter)
+    {
+        var query = _client.For<Sag>("Sag");
+
+            // 1. Håndter specifikke ID'er 
+            if (filter.SpecifikkeIds != null && filter.SpecifikkeIds.Any())
+            {
+                // Vi bygger en liste af strenge: ["Id eq 101", "Id eq 102"]
+                var idFiltre = filter.SpecifikkeIds.Select(id => $"Id eq {id}");
+                
+                // Vi sætter dem sammen med " or ": "Id eq 101 or Id eq 102"
+                var samletIdFilter = string.Join(" or ", idFiltre);
+                
+                // Vi sender tekststrengen til OData
+                query = query.Filter(samletIdFilter);
+            }
+            else 
+            {
+                // Hvis ingen specifikke ID'er, så brug den normale periode-filtrering
+                query = query.Filter(sag => sag.Periodeid == filter.periodeId);
+            }
+
+
+
+        if (!string.IsNullOrWhiteSpace(filter.Søgeord))
+        {
+            query = query.Filter(sag => sag.Titel.Contains(filter.Søgeord));
+        }
+        if (filter.TypeId.HasValue)
+        {
+            query = query.Filter(sag => sag.Typeid == filter.TypeId.Value);
+        }
+        var råSager = await query.Expand("Sagstrin, Sagaktør/Aktør").FindEntriesAsync();
+        var dtoListe = råSager.Select(sag => new SagDTO
+            {
+                Sagsnummer = sag.Id,
+                Overskrift = sag.Titel,
+                KortResume = sag.Resume,
+                Type = sag.Titelkort,
+                SidstOpdateret = sag.Opdateringsdato,
+
+                // Vi plukker navnene ud af den komplekse struktur
+                Politikere = sag.SagAktør?
+                    .Where(x => x.Aktør != null)
+                    .Select(x => x.Aktør!.Navn)
+                    .ToList() ?? new List<string>(),
+
+                // Vi lader dokumenter være tom, indtil du vil have dem med igen
+                DokumentTitler = new List<string>() 
+                
+            }).ToList();
+
+        return dtoListe;  
+          }
+
     public async Task <List<Sag>> GetSaserByPartyAndPeriode(string partyShortName, OdaPeriod period)
     {
         // TRIN 1: Hent alle politikerne i partiet
@@ -126,9 +182,7 @@ public class OdaService : IOdaService
             allePartietsSager.AddRange(personensSager);
         }
 
-        // TRIN 4: Fjern dubletter! 
-        // Hvis Mette Frederiksen og Nicolai Wammen har arbejdet på den SAMME sag, 
-        // ligger den nu i kurven to gange. DistinctBy fjerner kopierne.
+        
         var unikkeSager = allePartietsSager.DistinctBy(sag => sag.Id).ToList();
 
         return unikkeSager;
