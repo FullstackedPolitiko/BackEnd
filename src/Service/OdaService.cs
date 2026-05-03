@@ -132,7 +132,7 @@ public class OdaService : IOdaService
         {
             query = query.Filter(sag => sag.Typeid == filter.TypeId.Value);
         }
-        var råSager = await query.Expand("Sagstrin, Sagaktør/Aktør").FindEntriesAsync();
+        var råSager = await query.Expand("Sagstrin", "Sagaktør/Aktør").FindEntriesAsync();
         var dtoListe = råSager.Select(sag => new SagDTO
             {
                 Sagsnummer = sag.Id,
