@@ -11,6 +11,7 @@ builder.Services.AddScoped<OdaService>();
 builder.Services.SetupCors();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.SetupAuthentication();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseNpgsql(ConnectionString);
@@ -28,6 +29,8 @@ else
 {
     app.UseCors("Allowed");
 }
+app.UseAuthentication(); 
+app.UseAuthorization();  
 app.MapUserApi();
 app.MapPoliticianDataApi();
 

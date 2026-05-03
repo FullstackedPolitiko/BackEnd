@@ -12,9 +12,9 @@ namespace src.Apis
             var api = app.MapGroup("api/users");
 
             api.MapGet("/login", GetOrCreateUser)
-            .WithName("Logs")
-            .WithDescription("Gets a user")
-            .WithTags("fetch")
+            .WithName("login")
+            .WithDescription("logs in a user and creates it if first time logged in")
+            .WithTags("login")
             .RequireAuthorization();
 
             return app;
