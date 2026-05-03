@@ -17,6 +17,10 @@ public static class SagDataApi
         api.MapGet("/filter", GetFilteredSager)
             .WithName("GetFilteredSager")
             .WithDescription("Søg og filtrer i sager baseret på periode, søgeord mm.");
+        
+        api.MapGet("/parti/{partyShortName}/{periode}",GetSagerByParty)
+            .WithName("GetSagerByParty")
+            .WithDescription("Hent alle unikke sager tilknyttet et bestemt parti i en given periode");
 
         return app;
     }
@@ -39,4 +43,11 @@ public static class SagDataApi
        
         return await odaService.GetFilteredSager(filter);
     }
+
+    public static async Task<List<SagDTO>> GetSagerByParty(string partyShortName, OdaPeriod periode, OdaService odaService)
+    {
+        return await odaService.GetSagerByPartyAndPeriode(partyShortName, periode);
+    }
+
+
 }
