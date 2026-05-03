@@ -10,13 +10,14 @@ namespace src.model.Entities
     {
         public long Id {get; set;}
         public String Name {get;set;}
-        public String Token{get;set;}
+        public String Email {get;set;}
+        public String GoogleID{get;set;}
         public User() { }
         public User(long id,String name,String token)
         {
             this.Id = id;
             this.Name = name;
-            this.Token = token;
+            this.GoogleID = token;
         }
     }
 }
