@@ -21,6 +21,10 @@ public static class SagDataApi
         api.MapGet("/parti/{partyShortName}/{periode}",GetSagerByParty)
             .WithName("GetSagerByParty")
             .WithDescription("Hent alle unikke sager tilknyttet et bestemt parti i en given periode");
+        
+        api.MapGet("/parti/{partyShortName}/alle/{periode}", GetAllSagerByPartyEver)
+            .WithName("GetAllSagerByPartyEver")
+            .WithDescription("Hent alle sager på tværs af alle år, for politikere der er aktive i den valgte periode");
 
         return app;
     }
@@ -48,6 +52,13 @@ public static class SagDataApi
     {
         return await odaService.GetSagerByPartyAndPeriode(partyShortName, periode);
     }
+    public static async Task<List<SagDTO>> GetAllSagerByPartyEver(
+    string partyShortName, 
+    OdaPeriod periode, 
+    OdaService odaService)
+{
+    return await odaService.GetAllSagerByParty(partyShortName, periode);
+}
 
 
 }

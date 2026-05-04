@@ -220,9 +220,7 @@ public async Task<List<SagDTO>> GetSagerByPartyAndPeriode(string partyShortName,
         }
         catch (Exception ex)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"Fejl under hentning af sager (Skip: {skip}): {ex.Message}");
-            Console.ResetColor();
             break;
         }
     }
@@ -245,4 +243,88 @@ public async Task<List<SagDTO>> GetSagerByPartyAndPeriode(string partyShortName,
 
     return dtoListe;
 }
+
+public async Task<List<SagDTO>> GetAllSagerByParty(string partyShortName, OdaPeriod period)
+{
+ 
+    var politikere = await GetPoliticalPartyMembers(partyShortName, period);
+    
+    if (politikere == null || !politikere.Any())
+    {
+        return new List<SagDTO>();
+    }
+
+
+    var sagTilPolitikerNavne = new Dictionary<int, List<string>>();
+
+    foreach (var person in politikere)
+    {
+        try 
+        {
+            var links = await _client.For<SagAktør>("Sagaktør")
+                .Filter(aktør => aktør.Aktørid == person.Id) 
+                .FindEntriesAsync();
+
+            foreach (var link in links)
+            {
+                if (!sagTilPolitikerNavne.ContainsKey(link.Sagid))
+                {
+                    sagTilPolitikerNavne[link.Sagid] = new List<string>();
+                }
+                if (!sagTilPolitikerNavne[link.Sagid].Contains(person.Navn))
+                {
+                    sagTilPolitikerNavne[link.Sagid].Add(person.Navn);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Kunne ikke hente sags-links for {person.Navn}: {ex.Message}");
+        }
+    }
+
+    var alleSagsIds = sagTilPolitikerNavne.Keys.ToList();
+    Console.WriteLine($"Register bygget! De er involveret i {alleSagsIds.Count} sager (på tværs af alle år).");
+    Console.WriteLine("Henter nu selve sagerne i klumper af 40 for at undgå at overbelaste serveren...");
+
+    var partietsSager = new List<Sag>();
+    int batchSize = 10; 
+
+        for (int i = 0; i < alleSagsIds.Count; i += batchSize)
+        {
+            var idBatch = alleSagsIds.Skip(i).Take(batchSize).ToList();
+
+
+            var filterString = string.Join(" or ", idBatch.Select(id => $"id eq {id}"));
+
+            try
+            {
+                var sagerBatch = await _client.For<Sag>("Sag")
+                    .Filter(filterString) 
+                    .FindEntriesAsync();
+
+                partietsSager.AddRange(sagerBatch);
+                
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fejl i batch fra index {i}: {ex.Message}");
+            }
+        }
+
+
+    var dtoListe = partietsSager.Select(sag => new SagDTO
+    {
+        Sagsnummer = sag.Id,
+        Overskrift = sag.Titel,
+        KortResume = sag.Resume,
+        Type = sag.Titelkort,
+        SidstOpdateret = sag.Opdateringsdato,
+        Politikere = sagTilPolitikerNavne[sag.Id],
+        DokumentTitler = new List<string>()
+    }).ToList();
+
+    return dtoListe;
+}
+
 }
