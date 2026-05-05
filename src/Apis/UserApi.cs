@@ -7,15 +7,19 @@ namespace src.Apis
 {
     public static class UserApi
     {
-        public static IEndpointRouteBuilder MapUserApi(this IEndpointRouteBuilder app)
+        public static IEndpointRouteBuilder MapUserApi(this IEndpointRouteBuilder app, bool isDevelopment)
         {
             var api = app.MapGroup("api/users");
 
-            api.MapGet("/login", GetOrCreateUser)
+            var endpoint = api.MapGet("/login", GetOrCreateUser)
             .WithName("login")
             .WithDescription("logs in a user and creates it if first time logged in")
-            .WithTags("login")
-            .RequireAuthorization();
+            .WithTags("login");
+
+            if (!isDevelopment) 
+            {
+                endpoint.RequireAuthorization();
+            }
 
             return app;
         }
