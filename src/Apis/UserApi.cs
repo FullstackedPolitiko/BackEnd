@@ -1,5 +1,4 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using src.Database;
 using src.model.Entities;
@@ -12,34 +11,40 @@ namespace src.Apis
         {
             var api = app.MapGroup("api/users");
 
-            api.MapGet("/{id}", GetUserById)
-            .WithName("user fetch")
-            .WithDescription("Gets a user")
-            .WithTags("fetch");
-
-            api.MapPost("/create", CreateUser)
-            .WithName("user create")
-            .WithDescription("Creates a user")
-            .WithTags("create");
+            api.MapGet("/login", GetOrCreateUser)
+            .WithName("login")
+            .WithDescription("logs in a user and creates it if first time logged in")
+            .WithTags("login")
+            .RequireAuthorization();
 
             return app;
         }
 
-        public static async Task<Ok<User>> GetUserById(int id, ApplicationDbContext db)
-        {
-            User user = null;
-            user = await db.Users.FirstOrDefaultAsync(b => b.Id == id);
+        public static async Task<IResult> GetOrCreateUser(ClaimsPrincipal claims, ApplicationDbContext db)
+        {   
+            var googleId = claims.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                        ?? claims.FindFirst("sub")?.Value;
+            var email = claims.FindFirst(ClaimTypes.Email)?.Value;
+            var name = claims.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(googleId)) return TypedResults.Unauthorized();
+
+            var user = await db.Users.FirstOrDefaultAsync(u => u.GoogleID == googleId);
+
+            if (user == null)
+            {
+                user = new User 
+                { 
+                    Name = name, 
+                    Email = email,
+                    GoogleID = googleId,
+                };
+                
+                db.Users.Add(user);
+                await db.SaveChangesAsync();
+            }
 
             return TypedResults.Ok(user);
-        }
-
-        public static async Task<Created<User>> CreateUser(
-            [FromBody] User user,
-            ApplicationDbContext db)
-        {
-            db.Users.Add(user);
-            await db.SaveChangesAsync();
-            return TypedResults.Created($"/api/users/{user.Id}", user);
         }
     }
 }

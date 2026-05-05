@@ -12,7 +12,8 @@ namespace src.Apis
             api.MapGet("/politicians/{partyShortName}/{period}",GetPoliticians)
             .WithName("politicians")
             .WithDescription("Get a paginated list of politicians from a party")
-            .WithTags("Politicians");
+            .WithTags("Politicians")
+            .RequireAuthorization();
 
             return app;
         }
@@ -26,3 +27,4 @@ namespace src.Apis
         }
     }
 }
+
