@@ -3,28 +3,35 @@ using ODA.Service;
 using src.model.Dto;
 namespace src.Apis;
 
-
 public static class SagDataApi
 {
-    public static IEndpointRouteBuilder MapSagDataApi(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapSagDataApi(this IEndpointRouteBuilder app, bool isDevelopment)
     {
         var api = app.MapGroup("api/sager").WithTags("Sager");
 
-        api.MapGet("/{id}", GetSagById)
+        var getSagById = api.MapGet("/{id}", GetSagById)
             .WithName("GetSagById")
             .WithDescription("Hent en specifik politisk sag ud fra dens ID");
         
-        api.MapGet("/filter", GetFilteredSager)
+        var getFilteredSager = api.MapGet("/filter", GetFilteredSager)
             .WithName("GetFilteredSager")
             .WithDescription("Søg og filtrer i sager baseret på periode, søgeord mm.");
         
-        api.MapGet("/parti/{partyShortName}/{periode}",GetSagerByParty)
+        var getSagerByParty = api.MapGet("/parti/{partyShortName}/{periode}",GetSagerByParty)
             .WithName("GetSagerByParty")
             .WithDescription("Hent alle unikke sager tilknyttet et bestemt parti i en given periode");
         
-        api.MapGet("/parti/{partyShortName}/alle/{periode}", GetAllSagerByPartyEver)
+        var getAllSagerByPartyEver = api.MapGet("/parti/{partyShortName}/alle/{periode}", GetAllSagerByPartyEver)
             .WithName("GetAllSagerByPartyEver")
             .WithDescription("Hent alle sager på tværs af alle år, for politikere der er aktive i den valgte periode");
+
+        if (!isDevelopment)
+        {
+            getSagById.RequireAuthorization();
+            getFilteredSager.RequireAuthorization();
+            getSagerByParty.RequireAuthorization();
+            getAllSagerByPartyEver.RequireAuthorization();
+        }
 
         return app;
     }
@@ -42,9 +49,6 @@ public static class SagDataApi
     }
     public static async Task<List<SagDTO>> GetFilteredSager([AsParameters] SagFilterDTO filter, OdaService odaService)
     {
-    
-
-       
         return await odaService.GetFilteredSager(filter);
     }
 
