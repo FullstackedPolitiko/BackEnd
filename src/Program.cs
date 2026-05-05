@@ -33,7 +33,7 @@ app.UseAuthentication();
 app.UseAuthorization();  
 app.MapUserApi(app.Environment.IsDevelopment());
 app.MapPoliticianDataApi(app.Environment.IsDevelopment());
-
+app.MapSagDataApi(app.Environment.IsDevelopment());
 app.Run();
 
 public partial class Program { }
