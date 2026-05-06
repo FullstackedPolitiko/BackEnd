@@ -11,14 +11,14 @@ namespace src.WebConfig
                 .AddJwtBearer(options =>
                 {
                     options.Authority = "https://accounts.google.com";
-                    options.Audience = "DIT_GOOGLE_CLIENT_ID.apps.googleusercontent.com"; //Skal ændres til google acc
+                    options.Audience = "456252307245-h0562qe8uqj8crla1565pd6fbsgl62jb.apps.googleusercontent.com"; //Skal ændres til google acc
                     
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
                         ValidIssuer = "https://accounts.google.com",
                         ValidateAudience = true,
-                        ValidAudience = "DIT_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+                        ValidAudience = "456252307245-h0562qe8uqj8crla1565pd6fbsgl62jb.apps.googleusercontent.com",
                         ValidateLifetime = true
                     };
                 });
