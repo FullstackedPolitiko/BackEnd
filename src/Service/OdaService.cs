@@ -71,47 +71,260 @@ public class OdaService : IOdaService
             .ToList();
     }
         
-     public async Task<Sag> GetPoliticalSag(int id)
+    public async Task<SagDTO?> GetPoliticalSag(int id)
     {
         var sag = await _client
             .For<Sag>("Sag") 
             .Key(id)
+            .Expand("Sagstrin", "Sagaktør/Aktør")
             .FindEntryAsync();
-            
-        return sag;
-    }   
-    public async Task <List<Sag>> GetSaserByPartyAndPeriode(string partyShortName, OdaPeriod period)
-    {
-        // TRIN 1: Hent alle politikerne i partiet
-        var politikere = await GetPoliticalPartyMembers(partyShortName, period);
+
+        if (sag == null) return null;
+
+        var dto = new SagDTO
+        {
+            Sagsnummer = sag.Id,
+            Overskrift = sag.Titel,
+            KortResume = sag.Resume,
+            Type = sag.Titelkort,
+            SidstOpdateret = sag.Opdateringsdato,
+
+            Politikere = sag.SagAktør?
+            .Where(x => x.Aktør != null)
+            .Select(x => x.Aktør!.Navn)
+            .ToList() ?? new List<string>(),
+
+
+        };
         
-        if (politikere == null || !politikere.Any())
+    return dto;
+    }  
+
+    public async Task<List<SagDTO>> GetFilteredSager(SagFilterDTO filter)
+    {
+        var query = _client.For<Sag>("Sag");
+
+             
+            if (filter.SpecifikkeIds != null && filter.SpecifikkeIds.Any())
+            {
+                var idFiltre = filter.SpecifikkeIds.Select(id => $"Id eq {id}");
+                
+
+                var samletIdFilter = string.Join(" or ", idFiltre);
+                
+
+                query = query.Filter(samletIdFilter);
+            }
+            else 
+            {
+                query = query.Filter(sag => sag.Periodeid == filter.periodeId);
+            }
+
+
+
+        if (!string.IsNullOrWhiteSpace(filter.Søgeord))
         {
-            Console.WriteLine("Fejl: Fandt ingen politikere for dette parti i denne periode.");
-            return new List<Sag>();
+            query = query.Filter(sag => sag.Titel.Contains(filter.Søgeord));
         }
-
-        Console.WriteLine($"Fandt {politikere.Count} politikere i {partyShortName}. Henter deres sager (dette kan tage et par sekunder)...");
-
-        // TRIN 2: Opret en stor tom "kurv", vi kan lægge alle sagerne i
-        var allePartietsSager = new List<Sag>();
-
-        // TRIN 3: Spørg Folketinget om sager for HVER enkelt politiker
-        foreach (var person in politikere)
+        if (filter.TypeId.HasValue)
         {
-            var personensSager = await _client.For<Sag>("Sag")
-                .Filter(sag => sag.Periodeid == (int)period && sag.SagAktør.Any(aktør => aktør.Aktørid == person.Id))
+            query = query.Filter(sag => sag.Typeid == filter.TypeId.Value);
+        }
+        var råSager = await query.Expand("Sagstrin", "Sagaktør/Aktør").FindEntriesAsync();
+        var dtoListe = råSager.Select(sag => new SagDTO
+            {
+                Sagsnummer = sag.Id,
+                Overskrift = sag.Titel,
+                KortResume = sag.Resume,
+                Type = sag.Titelkort,
+                SidstOpdateret = sag.Opdateringsdato,
+
+                Politikere = sag.SagAktør?
+                    .Where(x => x.Aktør != null)
+                    .Select(x => x.Aktør!.Navn)
+                    .ToList() ?? new List<string>(),
+
+                DokumentTitler = new List<string>() 
+                
+            }).ToList();
+
+        return dtoListe;  
+          }
+
+public async Task<List<SagDTO>> GetSagerByPartyAndPeriode(string partyShortName, OdaPeriod period)
+{
+    var politikere = await GetPoliticalPartyMembers(partyShortName, period);
+    
+    if (politikere == null || !politikere.Any())
+    {
+        return new List<SagDTO>();
+    }
+
+
+    var sagTilPolitikerNavne = new Dictionary<int, List<string>>();
+
+    foreach (var person in politikere)
+    {
+        try 
+        {
+            var links = await _client.For<SagAktør>("Sagaktør")
+                .Filter(aktør => aktør.Aktørid == person.Id) 
                 .FindEntriesAsync();
 
-            // Læg denne politikers sager ned i den store fælles kurv
-            allePartietsSager.AddRange(personensSager);
+            foreach (var link in links)
+            {
+                if (!sagTilPolitikerNavne.ContainsKey(link.Sagid))
+                {
+                    sagTilPolitikerNavne[link.Sagid] = new List<string>();
+                }
+                
+                if (!sagTilPolitikerNavne[link.Sagid].Contains(person.Navn))
+                {
+                    sagTilPolitikerNavne[link.Sagid].Add(person.Navn);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Kunne ikke hente sags-links for {person.Navn}: {ex.Message}");
+        }
+    }
+
+
+    int pId = (int)period;
+    var sagerFraPerioden = new List<Sag>();
+    int skip = 0;
+    int batchSize = 100;
+    bool moreData = true;
+
+    while (moreData)
+    {
+        try 
+        {
+            var batch = await _client.For<Sag>("Sag")
+                .Filter(sag => sag.Periodeid == pId)
+                .Skip(skip)
+                .Top(batchSize)
+                .FindEntriesAsync();
+
+            var liste = batch.ToList();
+            if (liste.Any())
+            {
+                sagerFraPerioden.AddRange(liste);
+                skip += batchSize;
+            }
+            else
+            {
+                moreData = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fejl under hentning af sager (Skip: {skip}): {ex.Message}");
+            break;
+        }
+    }
+
+    var partietsSagerIPerioden = sagerFraPerioden
+        .Where(sag => sagTilPolitikerNavne.ContainsKey(sag.Id))
+        .ToList();
+
+
+    var dtoListe = partietsSagerIPerioden.Select(sag => new SagDTO
+    {
+        Sagsnummer = sag.Id,
+        Overskrift = sag.Titel,
+        KortResume = sag.Resume,
+        Type = sag.Titelkort,
+        SidstOpdateret = sag.Opdateringsdato,
+        Politikere = sagTilPolitikerNavne[sag.Id],
+        DokumentTitler = new List<string>()
+    }).ToList();
+
+    return dtoListe;
+}
+
+public async Task<List<SagDTO>> GetAllSagerByParty(string partyShortName, OdaPeriod period)
+{
+ 
+    var politikere = await GetPoliticalPartyMembers(partyShortName, period);
+    
+    if (politikere == null || !politikere.Any())
+    {
+        return new List<SagDTO>();
+    }
+
+
+    var sagTilPolitikerNavne = new Dictionary<int, List<string>>();
+
+    foreach (var person in politikere)
+    {
+        try 
+        {
+            var links = await _client.For<SagAktør>("Sagaktør")
+                .Filter(aktør => aktør.Aktørid == person.Id) 
+                .FindEntriesAsync();
+
+            foreach (var link in links)
+            {
+                if (!sagTilPolitikerNavne.ContainsKey(link.Sagid))
+                {
+                    sagTilPolitikerNavne[link.Sagid] = new List<string>();
+                }
+                if (!sagTilPolitikerNavne[link.Sagid].Contains(person.Navn))
+                {
+                    sagTilPolitikerNavne[link.Sagid].Add(person.Navn);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Kunne ikke hente sags-links for {person.Navn}: {ex.Message}");
+        }
+    }
+
+    var alleSagsIds = sagTilPolitikerNavne.Keys.ToList();
+    Console.WriteLine($"Register bygget! De er involveret i {alleSagsIds.Count} sager (på tværs af alle år).");
+    Console.WriteLine("Henter nu selve sagerne i klumper af 40 for at undgå at overbelaste serveren...");
+
+    var partietsSager = new List<Sag>();
+    int batchSize = 10; 
+
+        for (int i = 0; i < alleSagsIds.Count; i += batchSize)
+        {
+            var idBatch = alleSagsIds.Skip(i).Take(batchSize).ToList();
+
+
+            var filterString = string.Join(" or ", idBatch.Select(id => $"id eq {id}"));
+
+            try
+            {
+                var sagerBatch = await _client.For<Sag>("Sag")
+                    .Filter(filterString) 
+                    .FindEntriesAsync();
+
+                partietsSager.AddRange(sagerBatch);
+                
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fejl i batch fra index {i}: {ex.Message}");
+            }
         }
 
-        // TRIN 4: Fjern dubletter! 
-        // Hvis Mette Frederiksen og Nicolai Wammen har arbejdet på den SAMME sag, 
-        // ligger den nu i kurven to gange. DistinctBy fjerner kopierne.
-        var unikkeSager = allePartietsSager.DistinctBy(sag => sag.Id).ToList();
 
-        return unikkeSager;
-    }
+    var dtoListe = partietsSager.Select(sag => new SagDTO
+    {
+        Sagsnummer = sag.Id,
+        Overskrift = sag.Titel,
+        KortResume = sag.Resume,
+        Type = sag.Titelkort,
+        SidstOpdateret = sag.Opdateringsdato,
+        Politikere = sagTilPolitikerNavne[sag.Id],
+        DokumentTitler = new List<string>()
+    }).ToList();
+
+    return dtoListe;
+}
+
 }

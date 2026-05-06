@@ -1,0 +1,54 @@
+name: .NET E2E Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=postgres"
+      ASPNETCORE_ENVIRONMENT: "Production"
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      with:
+        dotnet-version: '10.0.x' 
+      uses: actions/setup-dotnet@v4
+
+    - name: Restore dependencies
+      run: dotnet restore tests/Backend.Tests/Backend.Tests.csproj
+
+    - name: Build
+      run: dotnet build tests/Backend.Tests/Backend.Tests.csproj --no-restore
+
+    - name: Install EF Tool
+      run: dotnet tool install --global dotnet-ef
+
+    - name: Update Database (Migrations)
+      run: dotnet ef database update --project src/Backend.csproj --startup-project src/Backend.csproj
+
+    - name: Run Tests
+      run: dotnet test tests/Backend.Tests/Backend.Tests.csproj --no-build --verbosity normal

@@ -5,15 +5,19 @@ namespace src.Apis
 {
     public static class PoliticianDataApi
     {
-        public static IEndpointRouteBuilder MapPoliticianDataApi(this IEndpointRouteBuilder app)
+        public static IEndpointRouteBuilder MapPoliticianDataApi(this IEndpointRouteBuilder app, bool isDevelopment)
         {
             var api = app.MapGroup("api/PoliticianData");
             
-            api.MapGet("/politicians/{partyShortName}/{period}",GetPoliticians)
+            var endpoint = api.MapGet("/politicians/{partyShortName}/{period}",GetPoliticians)
             .WithName("politicians")
             .WithDescription("Get a paginated list of politicians from a party")
-            .WithTags("Politicians")
-            .RequireAuthorization();
+            .WithTags("Politicians");
+
+            if (!isDevelopment)
+            {
+                endpoint.RequireAuthorization();
+            }
 
             return app;
         }
