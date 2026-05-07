@@ -28,8 +28,10 @@ namespace src.Apis
         {   
             var googleId = claims.FindFirst(ClaimTypes.NameIdentifier)?.Value 
                         ?? claims.FindFirst("sub")?.Value;
-            var email = claims.FindFirst(ClaimTypes.Email)?.Value;
-            var name = claims.FindFirst(ClaimTypes.Name)?.Value;
+            var email = claims.FindFirst(ClaimTypes.Email)?.Value 
+                        ?? claims.FindFirst("email")?.Value;
+            var name = claims.FindFirst(ClaimTypes.Name)?.Value 
+                       ?? claims.FindFirst("name")?.Value;
 
             if (string.IsNullOrEmpty(googleId)) return TypedResults.Unauthorized();
 
